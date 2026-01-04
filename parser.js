@@ -34,10 +34,17 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（リンク・空白行・太字修正済み）
+// Wiki構文パーサ（リンク・空白行・太字修正）
 // ===============================
 function parse(text) {
   let html = text;
+
+  // -------------------------------
+  // 装飾マクロ（太字）
+  // [[]] 内は太字にしない
+  // -------------------------------
+  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
+  html = html.replace(/&br\(\)/g, '<br>');
 
   // -------------------------------
   // 外部リンク
@@ -55,23 +62,14 @@ function parse(text) {
 
   // -------------------------------
   // 内部リンク
-  // [[ページ名]] または [[表示名>ページ名]] → 表示名またはページ名表示
-  // 太字にはしない
+  // [[ページ名]] または [[表示名>ページ名]]
+  // → 表示名またはページ名表示、太字無効
   // -------------------------------
   html = html.replace(
     /\[\[(?:(.+?)>)?(.+?)\]\]/g,
-    (_, display, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${display || page}</a>`
+    (_, display, page) =>
+      `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${display || page}</a>`
   );
-
-  // -------------------------------
-  // 装飾マクロ（太字）
-  // 内部リンク <a> 内には適用しない
-  // -------------------------------
-  html = html.replace(/&bold\(\)\{(.+?)\}/g, (_, content) => {
-    // content 内に <a> があれば太字化しない
-    if (/<a\b/.test(content)) return content;
-    return `<strong>${content}</strong>`;
-  });
 
   // -------------------------------
   // 見出し
@@ -95,10 +93,10 @@ function parse(text) {
   // 段落処理（空行ごとに <p>）
   // -------------------------------
   html = html
-    .split(/\n{2,}/) // 空行で区切る
+    .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行は可視化
+      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行用
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
