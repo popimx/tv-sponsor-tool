@@ -34,14 +34,25 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（リンク・空白行・太字修正）
+// Wiki構文パーサ（内部リンク太字無効・空白行対応・&br()対応）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
+  // 内部リンク保護
+  // [[表示名>ページ名]] または [[ページ名]]
+  // -------------------------------
+  const internalLinks = [];
+  html = html.replace(/\[\[(?:(.+?)>)?(.+?)\]\]/g, (_, display, page) => {
+    const idx = internalLinks.length;
+    internalLinks.push({ display: display || page, page });
+    return `%%INTERNAL_LINK_${idx}%%`;
+  });
+
+  // -------------------------------
   // 装飾マクロ（太字）
-  // [[]] 内は太字にしない
+  // 内部リンクは強調されない
   // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
@@ -58,17 +69,6 @@ function parse(text) {
   html = html.replace(
     /\[\[(https?:\/\/.+?)\]\]/g,
     (_, url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
-  );
-
-  // -------------------------------
-  // 内部リンク
-  // [[ページ名]] または [[表示名>ページ名]]
-  // → 表示名またはページ名表示、太字無効
-  // -------------------------------
-  html = html.replace(
-    /\[\[(?:(.+?)>)?(.+?)\]\]/g,
-    (_, display, page) =>
-      `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${display || page}</a>`
   );
 
   // -------------------------------
@@ -96,11 +96,21 @@ function parse(text) {
     .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行用
+      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
+
+  // -------------------------------
+  // 内部リンク復元（太字禁止）
+  // -------------------------------
+  internalLinks.forEach((link, idx) => {
+    html = html.replace(
+      `%%INTERNAL_LINK_${idx}%%`,
+      `<a href="?page=${encodeURIComponent(link.page)}" data-page="${link.page}" class="no-bold">${link.display}</a>`
+    );
+  });
 
   return html;
 }
