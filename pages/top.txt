@@ -4,12 +4,9 @@
 - [[用語解説]]&br()当アットウィキで使われている用語をまとめたものです。
 
 ** 情報元
-*** 番組スポンサー詳しく! @ウィキ
-[[https://w.atwiki.jp/sponsoracjapan/]]
-*** 番組スポンサー情報館
-[[https://w.atwiki.jp/sponsor16/]]
-*** 番組スポンサー調査サイト
-[[https://w.atwiki.jp/sponsor24/]]
+*** 番組スポンサー詳しく! @ウィキ&br()[[https://w.atwiki.jp/sponsoracjapan/]]
+*** 番組スポンサー情報館&br()[[https://w.atwiki.jp/sponsor16/]]
+*** 番組スポンサー調査サイト&br()[[https://w.atwiki.jp/sponsor24/]]
 
 ** 管理人
 - 情報の間違いなどがございましたら、&bold(){[[管理人のTwitter>https://x.com/tv_1013]]} までお願いいたします。
