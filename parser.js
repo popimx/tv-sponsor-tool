@@ -1,5 +1,5 @@
 // ===============================
-// ページ読み込み
+// ページ読み込み（タイトル下線付き）
 // ===============================
 async function loadPage(path) {
   const res = await fetch(path);
@@ -10,7 +10,26 @@ async function loadPage(path) {
   }
 
   const text = await res.text();
-  document.getElementById('content').innerHTML = parse(text);
+  const bodyHtml = parse(text);
+
+  // ページ名をURLから取得
+  const pageTitle = decodeURIComponent(
+    path.replace('pages/', '').replace('.txt', '')
+  );
+
+  // タイトル＋文字数連動下線
+  const titleHtml = `
+    <div class="page-title">
+      <h2>${pageTitle}</h2>
+      <div class="page-underline">
+        ${'━'.repeat(pageTitle.length)}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('content').innerHTML =
+    titleHtml + bodyHtml;
+
   markMissingLinks();
 }
 
@@ -113,7 +132,13 @@ function showEditor(path) {
   );
 
   document.getElementById('content').innerHTML = `
-    <h2>${title}</h2>
+    <div class="page-title">
+      <h2>${title}</h2>
+      <div class="page-underline">
+        ${'━'.repeat(title.length)}
+      </div>
+    </div>
+
     <p>この記事はまだ存在しません。</p>
 
     <textarea
