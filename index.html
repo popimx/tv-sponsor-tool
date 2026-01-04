@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -23,8 +23,11 @@
 <script>
   const btn = document.getElementById('menu-btn');
   const menu = document.getElementById('menu');
+  const content = document.getElementById('content');
 
-  // ☰ メニュー開閉
+  /* =========================
+     ☰ メニュー開閉
+  ========================= */
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     menu.classList.toggle('open');
@@ -34,7 +37,7 @@
     );
   });
 
-  // メニュー内リンククリックで閉じる
+  /* メニュー内リンククリックで閉じる */
   menu.addEventListener('click', (e) => {
     if (e.target.tagName === 'A') {
       menu.classList.remove('open');
@@ -42,7 +45,7 @@
     }
   });
 
-  // メニュー外クリックで閉じる（スマホ向け）
+  /* メニュー外クリックで閉じる（スマホ向け） */
   document.addEventListener('click', (e) => {
     if (
       menu.classList.contains('open') &&
@@ -54,8 +57,11 @@
     }
   });
 
-  // メニュー読み込み
+  /* =========================
+     メニュー読み込み
+  ========================= */
   loadMenu();
+
   async function loadMenu() {
     const res = await fetch('pages/menu.txt');
     const text = await res.text();
@@ -63,10 +69,42 @@
     markMissingLinks();
   }
 
-  // ページ読み込み
+  /* =========================
+     ページ読み込み
+  ========================= */
   const params = new URLSearchParams(location.search);
   const page = params.get('page') || 'top';
-  loadPage(`pages/${page}.txt`);
+  loadPage(page);
+
+  async function loadPage(pageName) {
+    try {
+      const res = await fetch(`pages/${pageName}.txt`);
+      const text = await res.text();
+      content.innerHTML = parse(text);
+      markMissingLinks();
+    } catch {
+      content.innerHTML = `
+        <h2>${pageName}</h2>
+        <p>このページはまだ作成されていません。</p>
+        <p>
+          <a href="editor.html?page=${encodeURIComponent(pageName)}">
+            新規作成する
+          </a>
+        </p>
+      `;
+    }
+  }
+
+  /* =========================
+     未作成ページ（赤リンク）
+  ========================= */
+  function markMissingLinks() {
+    document.querySelectorAll('a[href^="?page="]').forEach(link => {
+      const pageName = link.getAttribute('href').replace('?page=', '');
+      fetch(`pages/${pageName}.txt`)
+        .catch(() => link.classList.add('missing'));
+    });
+  }
 </script>
 
 </body>
