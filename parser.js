@@ -12,10 +12,12 @@ async function loadPage(path) {
   const text = await res.text();
   const bodyHtml = parse(text);
 
+  // ページ名をURLから取得
   const pageTitle = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
+  // タイトル＋文字数連動下線
   const titleHtml = `
     <div class="page-title">
       <h2>${pageTitle}</h2>
@@ -32,51 +34,51 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（太字問題修正版）
+// Wiki構文パーサ（リンク・空白行・太字修正）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // まずリンク部分を保護
+  // 装飾マクロ（太字）
+  // [[]] 内は太字にしない
   // -------------------------------
-  const linkPlaceholders = [];
-  html = html.replace(/\[\[(.+?)>(https?:\/\/.+?)\]\]/g, (_, text, url) => {
-    const token = `__LINK_${linkPlaceholders.length}__`;
-    linkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener">${text}</a>`);
-    return token;
-  });
-
-  html = html.replace(/\[\[(.+?)>(.+?)\]\]/g, (_, text, page) => {
-    const token = `__LINK_${linkPlaceholders.length}__`;
-    linkPlaceholders.push(`<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${text}</a>`);
-    return token;
-  });
-
-  html = html.replace(/\[\[(https?:\/\/.+?)\]\]/g, (_, url) => {
-    const token = `__LINK_${linkPlaceholders.length}__`;
-    linkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
-    return token;
-  });
-
-  html = html.replace(/\[\[(.+?)\]\]/g, (_, page) => {
-    const token = `__LINK_${linkPlaceholders.length}__`;
-    linkPlaceholders.push(`<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${page}</a>`);
-    return token;
-  });
-
-  // -------------------------------
-  // 見出し
-  html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
-
-  // -------------------------------
-  // 太字マクロ
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
 
   // -------------------------------
-  // 箇条書き
+  // 外部リンク
+  // [[表示名>URL]] → 表示名のみ、リンクはURL
+  // [[URL]] → URLそのまま
+  // -------------------------------
+  html = html.replace(
+    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
+    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
+  );
+  html = html.replace(
+    /\[\[(https?:\/\/.+?)\]\]/g,
+    (_, url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
+  );
+
+  // -------------------------------
+  // 内部リンク
+  // [[ページ名]] または [[表示名>ページ名]]
+  // → 表示名またはページ名表示、太字は無効
+  // -------------------------------
+  html = html.replace(
+    /\[\[(?:(.+?)>)?(.+?)\]\]/g,
+    (_, display, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${display || page}</a>`
+  );
+
+  // -------------------------------
+  // 見出し
+  // -------------------------------
+  html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
+
+  // -------------------------------
+  // 箇条書き（連続 li を1つの ul にまとめる）
+  // -------------------------------
   html = html.replace(/(?:^- .+\n?)+/gm, block => {
     const items = block
       .trim()
@@ -88,21 +90,16 @@ function parse(text) {
 
   // -------------------------------
   // 段落処理（空行ごとに <p>）
+  // -------------------------------
   html = html
     .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return '<p>&nbsp;</p>';
+      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行用
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
-
-  // -------------------------------
-  // 保護していたリンクを元に戻す
-  linkPlaceholders.forEach((linkHtml, i) => {
-    html = html.replace(`__LINK_${i}__`, linkHtml);
-  });
 
   return html;
 }
@@ -130,7 +127,7 @@ async function markMissingLinks() {
 }
 
 // ===============================
-// 未作成ページ用エディタ
+// 未作成ページ用エディタ（簡易版）
 // ===============================
 function showEditor(path) {
   const title = decodeURIComponent(
