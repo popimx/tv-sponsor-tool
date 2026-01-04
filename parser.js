@@ -10,12 +10,18 @@ async function loadPage(path) {
   }
 
   const text = await res.text();
-  const bodyHtml = parse(text);
 
+  // &br() を先に変換
+  const replacedText = text.replace(/&br\(\)/g, '<br>');
+
+  const bodyHtml = parse(replacedText);
+
+  // ページ名をURLから取得
   const pageTitle = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
+  // タイトル＋文字数連動下線
   const titleHtml = `
     <div class="page-title">
       <h2>${pageTitle}</h2>
@@ -25,81 +31,63 @@ async function loadPage(path) {
     </div>
   `;
 
-  document.getElementById('content').innerHTML = titleHtml + bodyHtml;
+  document.getElementById('content').innerHTML =
+    titleHtml + bodyHtml;
 
   markMissingLinks();
 }
 
 // ===============================
-// Wiki構文パーサ（AtWiki寄せ）
+// Wiki構文パーサ（AtWiki寄せ・改良版）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 見出し
+  // 見出し（順番厳守）
   // -------------------------------
   html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
-  // 装飾マクロ
+  // 箇条書き（- タイトル + 説明）
   // -------------------------------
-  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
-  html = html.replace(/&br\(\)/g, '<br>');
-
-  // -------------------------------
-  // 外部リンク
-  // -------------------------------
-  html = html.replace(
-    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) =>
-      `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
-  );
-
-  html = html.replace(
-    /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) =>
-      `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
-  );
-
-  // -------------------------------
-  // 内部リンク
-  // -------------------------------
-  html = html.replace(
-    /\[\[(.+?)\]\]/g,
-    (_, p1) =>
-      `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
-  );
-
-  // -------------------------------
-  // 箇条書き（タイトル＋説明文対応）
-  // -------------------------------
-  html = html.replace(/(?:^- .+\n?(?:.+\n?)*)+/gm, block => {
-    const lines = block.trim().split('\n');
-    let itemsHtml = '';
+  html = html.replace(/(?:^- .+(?:\n(?!-).+)*)+/gm, block => {
+    const lines = block.split('\n');
+    const items = [];
 
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('- ')) {
-        let titleLine = lines[i].replace(/^- /, '');
-        let descLines = [];
+      const line = lines[i];
+      if (/^- /.test(line)) {
+        const titleMatch = line.replace(/^- /, '').trim();
+        let desc = '';
+
         // 次の行が説明文ならまとめる
-        for (let j = i + 1; j < lines.length; j++) {
-          if (!lines[j].startsWith('- ')) {
-            descLines.push(lines[j]);
-          } else {
-            break;
-          }
+        let j = i + 1;
+        while (j < lines.length && !/^- /.test(lines[j])) {
+          desc += lines[j] + '\n';
+          j++;
         }
-        i += descLines.length; // 説明文分スキップ
-        itemsHtml += `<li><a>${titleLine}</a>`;
-        if (descLines.length > 0) {
-          itemsHtml += '<br>' + descLines.join('<br>');
+        i = j - 1;
+
+        // 内部リンクだけ <a> に変換
+        const titleHtml = titleMatch.replace(
+          /\[\[(.+?)\]\]/g,
+          (_, p1) =>
+            `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
+        );
+
+        let liHtml = `<li><span class="term-title">${titleHtml}</span>`;
+        if (desc.trim()) {
+          liHtml += `<div class="term-desc">${desc.trim().replace(/\n/g, '<br>')}</div>`;
         }
-        itemsHtml += '</li>';
+        liHtml += '</li>';
+
+        items.push(liHtml);
       }
     }
-    return `<ul>${itemsHtml}</ul>`;
+
+    return `<ul>${items.join('')}</ul>`;
   });
 
   // -------------------------------
