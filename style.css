@@ -1,116 +1,111 @@
- /* =========================
-   全体（スマホ前提）
+/* =========================
+   全体
 ========================= */
-
 body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-               "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  font-size: 15px;        /* ← スマホ基準 */
-  line-height: 1.5;       /* ← 行間を詰めつつ可読性維持 */
+  padding: 0;
+  background-color: #f9f9f9;
+  color: #222;
+}
+
+/* 中央カラム（スマホ基準） */
+main {
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  background: #fff;
+  line-height: 1.45; /* atwiki寄り */
+  font-size: 1rem;
 }
 
 /* =========================
    ヘッダー
 ========================= */
-
 header {
   display: flex;
   align-items: center;
-  background: #222;
+  gap: 8px;
+  background-color: #2f5fa7;
   color: #fff;
   padding: 10px 12px;
 }
 
 header h1 {
-  font-size: 16px;
+  font-size: 1.1rem;
   margin: 0;
+  font-weight: bold;
 }
 
-/* =========================
-   メニューボタン
-========================= */
-
+/* メニューボタン */
 #menu-btn {
-  font-size: 22px;
-  margin-right: 10px;
+  font-size: 1.4rem;
   background: none;
   border: none;
-  color: white;
+  color: #fff;
   cursor: pointer;
 }
 
 /* =========================
-   メニュー（サイド）
+   メニュー
 ========================= */
-
 #menu {
   position: fixed;
-  top: 0;
-  left: -260px;
-  width: 240px;
-  height: 100%;
-  background: #f5f5f5;
-  padding: 14px;
-  transition: left .3s;
+  top: 48px;
+  left: 0;
+  width: 260px;
+  height: calc(100% - 48px);
+  background: #ffffff;
+  border-right: 1px solid #ccc;
   overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
   z-index: 1000;
 }
 
 #menu.open {
-  left: 0;
+  transform: translateX(0);
 }
 
-#menu h3 {
-  font-size: 14px;
-  margin: 14px 0 6px;
-}
-
-#menu ul {
-  padding-left: 16px;
-  margin: 4px 0 10px;
-}
-
-#menu li {
-  margin: 4px 0;
+#menu-content {
+  padding: 12px;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
 /* =========================
-   メイン表示
+   Wiki見出し
 ========================= */
-
-main {
-  padding: 14px;
+h2 {
+  font-size: 1.05rem;
+  font-weight: bold;
+  border-left: 5px solid #2f5fa7;
+  padding-left: 8px;
+  margin: 16px 0 6px;
 }
 
 h3 {
-  font-size: 16px;
-  margin: 18px 0 6px;
+  font-size: 0.95rem;
+  margin: 12px 0 4px;
+  font-weight: bold;
 }
 
-h4 {
-  font-size: 14px;
-  margin: 14px 0 4px;
-}
-
-p {
-  margin: 6px 0;
-}
-
+/* =========================
+   リスト
+========================= */
 ul {
-  margin: 6px 0;
   padding-left: 18px;
+  margin: 4px 0 10px;
 }
 
 li {
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 /* =========================
    リンク
 ========================= */
-
 a {
   color: #0645ad;
   text-decoration: none;
@@ -120,17 +115,38 @@ a:hover {
   text-decoration: underline;
 }
 
-/* 未作成ページ */
+/* 未作成ページ（赤リンク） */
 a.missing {
   color: #c00;
-  text-decoration: underline dotted;
 }
 
 /* =========================
-   エディタ
+   Wiki構文対応
 ========================= */
+strong {
+  font-weight: bold;
+}
 
-textarea {
-  font-size: 14px;
-  line-height: 1.4;
+/* &br() */
+.br {
+  display: block;
+  height: 4px;
+}
+
+/* #region() */
+.region {
+  border: 1px solid #ddd;
+  padding: 8px;
+  margin: 8px 0;
+  background: #fafafa;
+}
+
+/* =========================
+   PC時
+========================= */
+@media screen and (min-width: 768px) {
+  main {
+    max-width: 720px;
+    font-size: 1.05rem;
+  }
 }
