@@ -1,4 +1,4 @@
- // ===============================
+// ===============================
 // ページ読み込み（タイトル下線付き）
 // ===============================
 async function loadPage(path) {
@@ -34,16 +34,10 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（空白行を反映）
-/* AtWiki寄せ、改行や箇条書きを整形 */
+// Wiki構文パーサ（リンクと空白行対応）
+// ===============================
 function parse(text) {
   let html = text;
-
-  // -------------------------------
-  // 見出し
-  // -------------------------------
-  html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
   // 装飾マクロ
@@ -53,27 +47,32 @@ function parse(text) {
 
   // -------------------------------
   // 外部リンク
+  // [[表示名>URL]] → 表示名のみ、リンクはURL
+  // [[URL]] → URLそのまま
   // -------------------------------
   html = html.replace(
     /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) =>
-      `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
+    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
   );
-
   html = html.replace(
     /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) =>
-      `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
+    (_, url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
   );
 
   // -------------------------------
   // 内部リンク
+  // [[ページ名]] → ページ名表示
   // -------------------------------
   html = html.replace(
     /\[\[(.+?)\]\]/g,
-    (_, p1) =>
-      `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
+    (_, p1) => `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
   );
+
+  // -------------------------------
+  // 見出し
+  // -------------------------------
+  html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
   // 箇条書き（連続 li を1つの ul にまとめる）
@@ -91,12 +90,11 @@ function parse(text) {
   // 段落処理（空行ごとに <p>）
   // -------------------------------
   html = html
-    .split(/\n{2,}/) // 空行で区切る
+    .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return ''; // 完全な空白行は無視
+      if (!block) return '<p>&nbsp;</p>'; // 空行は &nbsp; で可視化
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
-      // 段落内改行は <br> に
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
@@ -127,7 +125,7 @@ async function markMissingLinks() {
 }
 
 // ===============================
-// 未作成ページ用エディタ（簡潔版）
+// 未作成ページ用エディタ（簡易版）
 // ===============================
 function showEditor(path) {
   const title = decodeURIComponent(
