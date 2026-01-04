@@ -12,12 +12,10 @@ async function loadPage(path) {
   const text = await res.text();
   const bodyHtml = parse(text);
 
-  // ページ名をURLから取得
   const pageTitle = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
-  // タイトル＋文字数連動下線
   const titleHtml = `
     <div class="page-title">
       <h2>${pageTitle}</h2>
@@ -27,8 +25,7 @@ async function loadPage(path) {
     </div>
   `;
 
-  document.getElementById('content').innerHTML =
-    titleHtml + bodyHtml;
+  document.getElementById('content').innerHTML = titleHtml + bodyHtml;
 
   markMissingLinks();
 }
@@ -40,7 +37,7 @@ function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 見出し（順番厳守）
+  // 見出し
   // -------------------------------
   html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
@@ -76,15 +73,33 @@ function parse(text) {
   );
 
   // -------------------------------
-  // 箇条書き（連続 li を1つの ul にまとめる）
+  // 箇条書き（タイトル＋説明文対応）
   // -------------------------------
-  html = html.replace(/(?:^- .+\n?)+/gm, block => {
-    const items = block
-      .trim()
-      .split('\n')
-      .map(line => `<li>${line.replace(/^- /, '')}</li>`)
-      .join('');
-    return `<ul>${items}</ul>`;
+  html = html.replace(/(?:^- .+\n?(?:.+\n?)*)+/gm, block => {
+    const lines = block.trim().split('\n');
+    let itemsHtml = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith('- ')) {
+        let titleLine = lines[i].replace(/^- /, '');
+        let descLines = [];
+        // 次の行が説明文ならまとめる
+        for (let j = i + 1; j < lines.length; j++) {
+          if (!lines[j].startsWith('- ')) {
+            descLines.push(lines[j]);
+          } else {
+            break;
+          }
+        }
+        i += descLines.length; // 説明文分スキップ
+        itemsHtml += `<li><a>${titleLine}</a>`;
+        if (descLines.length > 0) {
+          itemsHtml += '<br>' + descLines.join('<br>');
+        }
+        itemsHtml += '</li>';
+      }
+    }
+    return `<ul>${itemsHtml}</ul>`;
   });
 
   // -------------------------------
