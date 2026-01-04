@@ -22,7 +22,9 @@ main {
   line-height: 1.32; /* 明確に詰める */
 }
 
-/* 段落（重要） */
+/* =========================
+   段落
+========================= */
 p {
   margin: 4px 0;
 }
@@ -113,16 +115,35 @@ h3 {
   margin: 8px 0 2px;
 }
 
+h4 {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin: 6px 0 2px;
+}
+
 /* =========================
    リスト
 ========================= */
 ul {
   padding-left: 18px;
-  margin: 2px 0 6px;
+  margin: 4px 0 10px;
 }
 
 li {
-  margin: 1px 0;
+  margin: 0;
+}
+
+/* =========================
+   用語解説用（箇条書き＋説明文）
+========================= */
+.term-title {
+  font-weight: bold;
+}
+
+.term-desc {
+  margin-top: 6px;
+  margin-bottom: 12px;
+  line-height: 1.6;
 }
 
 /* =========================
