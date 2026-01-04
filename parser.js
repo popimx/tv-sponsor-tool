@@ -34,23 +34,15 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（内部リンクも表示名対応、空白行対応）
+// Wiki構文パーサ（リンクと空白行対応、太字制御）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 装飾マクロ（太字など）
-  // -------------------------------
-  // [[...]] 内は太字にしないため &bold(){} はここで置換
-  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
-  html = html.replace(/&br\(\)/g, '<br>');
-
-  // -------------------------------
   // 外部リンク
-  // [[表示名>URL]] → 表示名のみ表示
+  // [[表示名>URL]] → 表示名のみ、リンクはURL
   // [[URL]] → URLそのまま
-  // -------------------------------
   html = html.replace(
     /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
     (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
@@ -62,27 +54,29 @@ function parse(text) {
 
   // -------------------------------
   // 内部リンク
-  // [[表示名>ページ名]] → 表示名をリンク表示、リンク先はページ名
-  // [[ページ名]] → ページ名をリンク表示
-  // -------------------------------
+  // [[表示名>ページ名]] → ページ名表示
   html = html.replace(
     /\[\[(.+?)>(.+?)\]\]/g,
     (_, text, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${text}</a>`
   );
+  // [[ページ名]] → ページ名表示
   html = html.replace(
     /\[\[(.+?)\]\]/g,
     (_, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${page}</a>`
   );
 
   // -------------------------------
-  // 見出し
+  // 装飾マクロ（太字）※[[ ]] 内は影響なし
+  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
+  html = html.replace(/&br\(\)/g, '<br>');
+
   // -------------------------------
+  // 見出し
   html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
   // 箇条書き（連続 li を1つの ul にまとめる）
-  // -------------------------------
   html = html.replace(/(?:^- .+\n?)+/gm, block => {
     const items = block
       .trim()
@@ -94,12 +88,11 @@ function parse(text) {
 
   // -------------------------------
   // 段落処理（空行ごとに <p>）
-  // -------------------------------
   html = html
     .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return '<p>&nbsp;</p>'; // 空行は &nbsp; で表示
+      if (!block) return '<p>&nbsp;</p>'; // 空行は可視化
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
