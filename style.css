@@ -48,6 +48,14 @@ main {
 ========================= */
 p {
   margin: 6px 0;
+  line-height: 1.45;
+}
+
+/* 空白行用 */
+p.blank {
+  margin: 12px 0;
+  line-height: 1;
+  min-height: 1em;
 }
 
 /* 情報元対策：リンクだけの段落 */
