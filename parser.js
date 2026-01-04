@@ -20,15 +20,21 @@ async function loadPage(path) {
 function parse(text) {
   let html = text;
 
-  // --- 見出し（順番厳守） ---
+  // -------------------------------
+  // 見出し（順番厳守）
+  // -------------------------------
   html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
-  // --- 装飾 ---
+  // -------------------------------
+  // 装飾マクロ
+  // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
 
-  // --- 外部リンク ---
+  // -------------------------------
+  // 外部リンク
+  // -------------------------------
   html = html.replace(
     /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
     (_, text, url) =>
@@ -41,14 +47,18 @@ function parse(text) {
       `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
   );
 
-  // --- 内部リンク ---
+  // -------------------------------
+  // 内部リンク
+  // -------------------------------
   html = html.replace(
     /\[\[(.+?)\]\]/g,
     (_, p1) =>
       `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
   );
 
-  // --- 箇条書き（連続liを1つのulに） ---
+  // -------------------------------
+  // 箇条書き（連続 li を1つの ul にまとめる）
+  // -------------------------------
   html = html.replace(/(?:^- .+\n?)+/gm, block => {
     const items = block
       .trim()
@@ -58,7 +68,9 @@ function parse(text) {
     return `<ul>${items}</ul>`;
   });
 
-  // --- 段落（空行区切り） ---
+  // -------------------------------
+  // 段落処理（空行区切り）
+  // -------------------------------
   html = html
     .split(/\n{2,}/)
     .map(block => {
@@ -104,10 +116,16 @@ function showEditor(path) {
     <h2>${title}</h2>
     <p>この記事はまだ存在しません。</p>
 
-    <textarea id="editor" rows="16" style="width:100%; box-sizing:border-box;"></textarea>
+    <textarea
+      id="editor"
+      rows="16"
+      style="width:100%; box-sizing:border-box;"
+    ></textarea>
 
     <p style="margin-top:8px; font-size:0.9em; color:#666;">
-      内容を入力後、GitHub上で <code>pages/${title}.txt</code> を作成してください。
+      内容を入力後、GitHub上で
+      <code>pages/${title}.txt</code>
+      を作成してください。
     </p>
   `;
 }
