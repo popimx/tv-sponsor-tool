@@ -1,15 +1,35 @@
+ /* =========================
+   全体（スマホ前提）
+========================= */
+
 body {
   margin: 0;
-  font-family: sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+               "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  font-size: 15px;        /* ← スマホ基準 */
+  line-height: 1.5;       /* ← 行間を詰めつつ可読性維持 */
 }
+
+/* =========================
+   ヘッダー
+========================= */
 
 header {
   display: flex;
   align-items: center;
   background: #222;
   color: #fff;
-  padding: 10px;
+  padding: 10px 12px;
 }
+
+header h1 {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* =========================
+   メニューボタン
+========================= */
 
 #menu-btn {
   font-size: 22px;
@@ -20,6 +40,10 @@ header {
   cursor: pointer;
 }
 
+/* =========================
+   メニュー（サイド）
+========================= */
+
 #menu {
   position: fixed;
   top: 0;
@@ -27,20 +51,86 @@ header {
   width: 240px;
   height: 100%;
   background: #f5f5f5;
-  padding: 15px;
+  padding: 14px;
   transition: left .3s;
   overflow-y: auto;
+  z-index: 1000;
 }
 
 #menu.open {
   left: 0;
 }
 
-main {
-  padding: 20px;
+#menu h3 {
+  font-size: 14px;
+  margin: 14px 0 6px;
 }
 
+#menu ul {
+  padding-left: 16px;
+  margin: 4px 0 10px;
+}
+
+#menu li {
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+/* =========================
+   メイン表示
+========================= */
+
+main {
+  padding: 14px;
+}
+
+h3 {
+  font-size: 16px;
+  margin: 18px 0 6px;
+}
+
+h4 {
+  font-size: 14px;
+  margin: 14px 0 4px;
+}
+
+p {
+  margin: 6px 0;
+}
+
+ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+
+li {
+  margin: 4px 0;
+}
+
+/* =========================
+   リンク
+========================= */
+
+a {
+  color: #0645ad;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* 未作成ページ */
 a.missing {
   color: #c00;
   text-decoration: underline dotted;
+}
+
+/* =========================
+   エディタ
+========================= */
+
+textarea {
+  font-size: 14px;
+  line-height: 1.4;
 }
