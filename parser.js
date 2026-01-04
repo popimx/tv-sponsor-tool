@@ -42,6 +42,7 @@ function parse(text) {
   // -------------------------------
   // 内部リンク保護
   // [[表示名>ページ名]] または [[ページ名]]
+  // 太字禁止用にプレースホルダに置換
   // -------------------------------
   const internalLinks = [];
   html = html.replace(/\[\[(?:(.+?)>)?(.+?)\]\]/g, (_, display, page) => {
@@ -52,7 +53,7 @@ function parse(text) {
 
   // -------------------------------
   // 装飾マクロ（太字）
-  // 内部リンクは強調されない
+  // 内部リンクはこの時点では触らない
   // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
@@ -61,14 +62,17 @@ function parse(text) {
   // 外部リンク
   // [[表示名>URL]] → 表示名のみ、リンクはURL
   // [[URL]] → URLそのまま
+  // 外部リンクは常に青く
   // -------------------------------
   html = html.replace(
     /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
+    (_, text, url) =>
+      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${text}</a>`
   );
   html = html.replace(
     /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
+    (_, url) =>
+      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${url}</a>`
   );
 
   // -------------------------------
