@@ -48,14 +48,10 @@ main {
 ========================= */
 p {
   margin: 6px 0;
-  line-height: 1.45;
 }
 
-/* 空白行用 */
 p.blank {
-  margin: 12px 0;
-  line-height: 1;
-  min-height: 1em;
+  height: 1em; /* 空白行の高さ */
 }
 
 /* 情報元対策：リンクだけの段落 */
@@ -162,7 +158,6 @@ li {
   line-height: 1.6;
 }
 
-/* 用語解説リスト用 */
 li > a:first-child {
   font-weight: bold;
   display: inline-block;
@@ -181,7 +176,6 @@ a:hover {
   text-decoration: underline;
 }
 
-/* 未作成ページ（赤リンク） */
 a.missing {
   color: #c00;
 }
