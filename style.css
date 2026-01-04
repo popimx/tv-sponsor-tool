@@ -50,10 +50,6 @@ p {
   margin: 6px 0;
 }
 
-p.blank {
-  height: 1em; /* 空白行の高さ */
-}
-
 /* 情報元対策：リンクだけの段落 */
 p > a:only-child {
   display: inline-block;
@@ -158,7 +154,8 @@ li {
   line-height: 1.6;
 }
 
-li > a:first-child {
+/* 用語解説リスト用（最初のリンクだけ太字） */
+li > a:first-child:not([data-page]) {
   font-weight: bold;
   display: inline-block;
   margin-bottom: 4px;
@@ -176,6 +173,12 @@ a:hover {
   text-decoration: underline;
 }
 
+/* 内部リンクは太字にしない */
+a[data-page] {
+  font-weight: normal;
+}
+
+/* 未作成ページ（赤リンク） */
 a.missing {
   color: #c00;
 }
