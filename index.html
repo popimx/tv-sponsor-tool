@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -21,90 +21,120 @@
 
 <script src="parser.js"></script>
 <script>
-  const btn = document.getElementById('menu-btn');
-  const menu = document.getElementById('menu');
-  const content = document.getElementById('content');
+/* =========================
+   メニュー制御
+========================= */
+const btn = document.getElementById('menu-btn');
+const menu = document.getElementById('menu');
 
-  /* =========================
-     ☰ メニュー開閉
-  ========================= */
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.classList.toggle('open');
-    menu.setAttribute(
-      'aria-hidden',
-      !menu.classList.contains('open')
-    );
-  });
+btn.addEventListener('click', e => {
+  e.stopPropagation();
+  menu.classList.toggle('open');
+  menu.setAttribute('aria-hidden', !menu.classList.contains('open'));
+});
 
-  /* メニュー内リンククリックで閉じる */
-  menu.addEventListener('click', (e) => {
-    if (e.target.tagName === 'A') {
-      menu.classList.remove('open');
-      menu.setAttribute('aria-hidden', 'true');
-    }
-  });
+menu.addEventListener('click', e => {
+  if (e.target.tagName === 'A') {
+    menu.classList.remove('open');
+    menu.setAttribute('aria-hidden', 'true');
+  }
+});
 
-  /* メニュー外クリックで閉じる（スマホ向け） */
-  document.addEventListener('click', (e) => {
-    if (
-      menu.classList.contains('open') &&
+document.addEventListener('click', e => {
+  if (menu.classList.contains('open') &&
       !menu.contains(e.target) &&
-      e.target !== btn
-    ) {
-      menu.classList.remove('open');
-      menu.setAttribute('aria-hidden', 'true');
-    }
-  });
+      e.target !== btn) {
+    menu.classList.remove('open');
+    menu.setAttribute('aria-hidden', 'true');
+  }
+});
 
-  /* =========================
-     メニュー読み込み
-  ========================= */
-  loadMenu();
+/* =========================
+   メニュー読み込み
+========================= */
+loadMenu();
 
-  async function loadMenu() {
-    const res = await fetch('pages/menu.txt');
-    const text = await res.text();
-    document.getElementById('menu-content').innerHTML = parse(text);
-    markMissingLinks();
+async function loadMenu() {
+  const res = await fetch('pages/menu.txt');
+  const text = await res.text();
+  document.getElementById('menu-content').innerHTML = parse(text);
+  markMissingLinks();
+}
+
+/* =========================
+   ページ読み込み
+========================= */
+const params = new URLSearchParams(location.search);
+const page = params.get('page') || 'top';
+loadPage(`pages/${page}.txt`);
+
+async function loadPage(path) {
+  const res = await fetch(path);
+  if (!res.ok) {
+    showEditor(path);
+    return;
   }
 
-  /* =========================
-     ページ読み込み
-  ========================= */
-  const params = new URLSearchParams(location.search);
-  const page = params.get('page') || 'top';
-  loadPage(page);
+  const text = await res.text();
+  document.getElementById('content').innerHTML = parse(text);
+  markMissingLinks();
+}
 
-  async function loadPage(pageName) {
+/* =========================
+   未作成ページを赤く
+========================= */
+async function markMissingLinks() {
+  const links = document.querySelectorAll('a[data-page]');
+  for (const link of links) {
+    const name = link.dataset.page;
     try {
-      const res = await fetch(`pages/${pageName}.txt`);
-      const text = await res.text();
-      content.innerHTML = parse(text);
-      markMissingLinks();
+      const res = await fetch(`pages/${name}.txt`);
+      if (!res.ok) link.classList.add('missing');
     } catch {
-      content.innerHTML = `
-        <h2>${pageName}</h2>
-        <p>このページはまだ作成されていません。</p>
-        <p>
-          <a href="editor.html?page=${encodeURIComponent(pageName)}">
-            新規作成する
-          </a>
-        </p>
-      `;
+      link.classList.add('missing');
     }
   }
+}
 
-  /* =========================
-     未作成ページ（赤リンク）
-  ========================= */
-  function markMissingLinks() {
-    document.querySelectorAll('a[href^="?page="]').forEach(link => {
-      const pageName = link.getAttribute('href').replace('?page=', '');
-      fetch(`pages/${pageName}.txt`)
-        .catch(() => link.classList.add('missing'));
-    });
-  }
+/* =========================
+   編集モード（③＋④統合）
+========================= */
+function showEditor(path) {
+  const title = decodeURIComponent(
+    path.replace('pages/', '').replace('.txt', '')
+  );
+
+  document.getElementById('content').innerHTML = `
+    <h2>${title}</h2>
+    <p>この記事はまだ作成されていません。</p>
+
+    <textarea id="editor" rows="14"
+      style="width:100%; box-sizing:border-box;"></textarea>
+
+    <div style="margin:8px 0;">
+      <button id="preview-btn">プレビュー</button>
+      <button id="publish-btn">公開する</button>
+    </div>
+
+    <div id="preview"></div>
+  `;
+
+  document.getElementById('preview-btn').onclick = () => {
+    const text = document.getElementById('editor').value;
+    document.getElementById('preview').innerHTML = `
+      <h3>プレビュー</h3>
+      ${parse(text)}
+    `;
+  };
+
+  document.getElementById('publish-btn').onclick = () => {
+    const text = document.getElementById('editor').value;
+    navigator.clipboard.writeText(text);
+    alert(
+      `以下の内容を\npages/${title}.txt\nとしてGitHubに保存してください`
+    );
+  };
+}
 </script>
 
 </body>
