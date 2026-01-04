@@ -15,53 +15,57 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ
+// Wiki構文パーサ（AtWiki寄せ）
 // ===============================
 function parse(text) {
   let html = text;
 
-  // --- 見出し（順番重要） ---
-  // *** 小見出し
+  // --- 見出し（順番厳守） ---
   html = html.replace(/^\*\*\*\s*(.+)$/gm, '<h4>$1</h4>');
-
-  // ** 見出し
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
-  // --- 装飾マクロ ---
-  // &bold(){...}
+  // --- 装飾 ---
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
-
-  // &br()
   html = html.replace(/&br\(\)/g, '<br>');
 
-  // --- リンク ---
-  // [[表示名>URL]]
+  // --- 外部リンク ---
   html = html.replace(
     /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
     (_, text, url) =>
       `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
   );
 
-  // [[https://...]]
   html = html.replace(
     /\[\[(https?:\/\/.+?)\]\]/g,
     (_, url) =>
       `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
   );
 
-  // [[ページ名]]（内部リンク）
+  // --- 内部リンク ---
   html = html.replace(
     /\[\[(.+?)\]\]/g,
     (_, p1) =>
       `<a href="?page=${encodeURIComponent(p1)}" data-page="${p1}">${p1}</a>`
   );
 
-  // --- 箇条書き ---
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>');
+  // --- 箇条書き（連続liを1つのulに） ---
+  html = html.replace(/(?:^- .+\n?)+/gm, block => {
+    const items = block
+      .trim()
+      .split('\n')
+      .map(line => `<li>${line.replace(/^- /, '')}</li>`)
+      .join('');
+    return `<ul>${items}</ul>`;
+  });
 
-  // --- 改行 ---
-  html = html.replace(/\n/g, '<br>');
+  // --- 段落（空行区切り） ---
+  html = html
+    .split(/\n{2,}/)
+    .map(block => {
+      if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
+      return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+    })
+    .join('');
 
   return html;
 }
@@ -89,42 +93,21 @@ async function markMissingLinks() {
 }
 
 // ===============================
-// 未作成ページ用エディタ
+// 未作成ページ用エディタ（簡潔版）
 // ===============================
 function showEditor(path) {
   const title = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
-  const draft = localStorage.getItem(`draft:${title}`) || '';
-
   document.getElementById('content').innerHTML = `
     <h2>${title}</h2>
     <p>この記事はまだ存在しません。</p>
 
-    <textarea id="editor" rows="15" style="width:100%;">${draft}</textarea>
+    <textarea id="editor" rows="16" style="width:100%; box-sizing:border-box;"></textarea>
 
-    <div style="margin-top:10px;">
-      <button onclick="saveDraft('${title}')">下書き保存</button>
-      <button onclick="copyForGitHub('${title}')">GitHub用にコピー</button>
-    </div>
+    <p style="margin-top:8px; font-size:0.9em; color:#666;">
+      内容を入力後、GitHub上で <code>pages/${title}.txt</code> を作成してください。
+    </p>
   `;
-}
-
-// ===============================
-// 下書き保存
-// ===============================
-function saveDraft(title) {
-  const text = document.getElementById('editor').value;
-  localStorage.setItem(`draft:${title}`, text);
-  alert('下書きを保存しました（ブラウザ内）');
-}
-
-// ===============================
-// GitHub用コピー
-// ===============================
-function copyForGitHub(title) {
-  const text = document.getElementById('editor').value;
-  navigator.clipboard.writeText(text);
-  alert(`pages/${title}.txt としてGitHubに保存してください`);
 }
