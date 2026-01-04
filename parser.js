@@ -12,12 +12,10 @@ async function loadPage(path) {
   const text = await res.text();
   const bodyHtml = parse(text);
 
-  // ページ名をURLから取得
   const pageTitle = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
-  // タイトル＋文字数連動下線
   const titleHtml = `
     <div class="page-title">
       <h2>${pageTitle}</h2>
@@ -34,41 +32,38 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（リンクと空白行対応、太字制御）
+// Wiki構文パーサ（太字問題修正版）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 外部リンク
-  // [[表示名>URL]] → 表示名のみ、リンクはURL
-  // [[URL]] → URLそのまま
-  html = html.replace(
-    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
-  );
-  html = html.replace(
-    /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`
-  );
-
+  // まずリンク部分を保護
   // -------------------------------
-  // 内部リンク
-  // [[表示名>ページ名]] → ページ名表示
-  html = html.replace(
-    /\[\[(.+?)>(.+?)\]\]/g,
-    (_, text, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${text}</a>`
-  );
-  // [[ページ名]] → ページ名表示
-  html = html.replace(
-    /\[\[(.+?)\]\]/g,
-    (_, page) => `<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${page}</a>`
-  );
+  const linkPlaceholders = [];
+  html = html.replace(/\[\[(.+?)>(https?:\/\/.+?)\]\]/g, (_, text, url) => {
+    const token = `__LINK_${linkPlaceholders.length}__`;
+    linkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener">${text}</a>`);
+    return token;
+  });
 
-  // -------------------------------
-  // 装飾マクロ（太字）※[[ ]] 内は影響なし
-  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
-  html = html.replace(/&br\(\)/g, '<br>');
+  html = html.replace(/\[\[(.+?)>(.+?)\]\]/g, (_, text, page) => {
+    const token = `__LINK_${linkPlaceholders.length}__`;
+    linkPlaceholders.push(`<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${text}</a>`);
+    return token;
+  });
+
+  html = html.replace(/\[\[(https?:\/\/.+?)\]\]/g, (_, url) => {
+    const token = `__LINK_${linkPlaceholders.length}__`;
+    linkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+    return token;
+  });
+
+  html = html.replace(/\[\[(.+?)\]\]/g, (_, page) => {
+    const token = `__LINK_${linkPlaceholders.length}__`;
+    linkPlaceholders.push(`<a href="?page=${encodeURIComponent(page)}" data-page="${page}">${page}</a>`);
+    return token;
+  });
 
   // -------------------------------
   // 見出し
@@ -76,7 +71,12 @@ function parse(text) {
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
-  // 箇条書き（連続 li を1つの ul にまとめる）
+  // 太字マクロ
+  html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
+  html = html.replace(/&br\(\)/g, '<br>');
+
+  // -------------------------------
+  // 箇条書き
   html = html.replace(/(?:^- .+\n?)+/gm, block => {
     const items = block
       .trim()
@@ -92,11 +92,17 @@ function parse(text) {
     .split(/\n{2,}/)
     .map(block => {
       block = block.trim();
-      if (!block) return '<p>&nbsp;</p>'; // 空行は可視化
+      if (!block) return '<p>&nbsp;</p>';
       if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
+
+  // -------------------------------
+  // 保護していたリンクを元に戻す
+  linkPlaceholders.forEach((linkHtml, i) => {
+    html = html.replace(`__LINK_${i}__`, linkHtml);
+  });
 
   return html;
 }
@@ -124,7 +130,7 @@ async function markMissingLinks() {
 }
 
 // ===============================
-// 未作成ページ用エディタ（簡易版）
+// 未作成ページ用エディタ
 // ===============================
 function showEditor(path) {
   const title = decodeURIComponent(
