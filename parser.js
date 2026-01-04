@@ -34,7 +34,7 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（リンク・空白行・太字修正）
+// Wiki構文パーサ（リンク・空白行・太字修正済み）
 // ===============================
 function parse(text) {
   let html = text;
@@ -55,8 +55,8 @@ function parse(text) {
 
   // -------------------------------
   // 内部リンク
-  // [[ページ名]] または [[表示名>ページ名]]
-  // → 表示名またはページ名表示、太字は無効
+  // [[ページ名]] または [[表示名>ページ名]] → 表示名またはページ名表示
+  // 太字にはしない
   // -------------------------------
   html = html.replace(
     /\[\[(?:(.+?)>)?(.+?)\]\]/g,
@@ -64,18 +64,14 @@ function parse(text) {
   );
 
   // -------------------------------
-  // 太字マクロ &bold()
-  // <a> 内は無視
+  // 装飾マクロ（太字）
+  // 内部リンク <a> 内には適用しない
   // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, (_, content) => {
+    // content 内に <a> があれば太字化しない
     if (/<a\b/.test(content)) return content;
     return `<strong>${content}</strong>`;
   });
-
-  // -------------------------------
-  // 改行マクロ
-  // -------------------------------
-  html = html.replace(/&br\(\)/g, '<br>');
 
   // -------------------------------
   // 見出し
@@ -84,10 +80,12 @@ function parse(text) {
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
-  // 箇条書き
+  // 箇条書き（連続 li を1つの ul にまとめる）
   // -------------------------------
   html = html.replace(/(?:^- .+\n?)+/gm, block => {
-    const items = block.trim().split('\n')
+    const items = block
+      .trim()
+      .split('\n')
       .map(line => `<li>${line.replace(/^- /, '')}</li>`)
       .join('');
     return `<ul>${items}</ul>`;
@@ -96,12 +94,15 @@ function parse(text) {
   // -------------------------------
   // 段落処理（空行ごとに <p>）
   // -------------------------------
-  html = html.split(/\n{2,}/).map(block => {
-    block = block.trim();
-    if (!block) return '<p class="blank">&nbsp;</p>';
-    if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
-    return `<p>${block.replace(/\n/g, '<br>')}</p>`;
-  }).join('\n');
+  html = html
+    .split(/\n{2,}/) // 空行で区切る
+    .map(block => {
+      block = block.trim();
+      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行は可視化
+      if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
+      return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+    })
+    .join('\n');
 
   return html;
 }
