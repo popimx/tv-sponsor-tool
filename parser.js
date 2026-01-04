@@ -34,15 +34,28 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（内部リンク太字無効・空白行対応・&br()対応）
+// Wiki構文パーサ（外部リンク・内部リンク・空白行・&br()対応）
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 内部リンク保護
-  // [[表示名>ページ名]] または [[ページ名]]
-  // 太字禁止用にプレースホルダに置換
+  // 外部リンク先に飛べるリンクを先に処理
+  // [[表示名>URL]] → 表示名のみ、リンクはURL
+  // [[URL]] → URLそのまま
+  // -------------------------------
+  html = html.replace(
+    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
+    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener" class="external-link">${text}</a>`
+  );
+  html = html.replace(
+    /\[\[(https?:\/\/.+?)\]\]/g,
+    (_, url) => `<a href="${url}" target="_blank" rel="noopener" class="external-link">${url}</a>`
+  );
+
+  // -------------------------------
+  // 内部リンクプレースホルダ化（太字無効）
+  // [[ページ名]] または [[表示名>ページ名]]
   // -------------------------------
   const internalLinks = [];
   html = html.replace(/\[\[(?:(.+?)>)?(.+?)\]\]/g, (_, display, page) => {
@@ -53,27 +66,11 @@ function parse(text) {
 
   // -------------------------------
   // 装飾マクロ（太字）
-  // 内部リンクはこの時点では触らない
+  // 内部リンクプレースホルダは太字化されない
+  // &br() で改行
   // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
-
-  // -------------------------------
-  // 外部リンク
-  // [[表示名>URL]] → 表示名のみ、リンクはURL
-  // [[URL]] → URLそのまま
-  // 外部リンクは常に青く
-  // -------------------------------
-  html = html.replace(
-    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) =>
-      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${text}</a>`
-  );
-  html = html.replace(
-    /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) =>
-      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${url}</a>`
-  );
 
   // -------------------------------
   // 見出し
