@@ -34,40 +34,46 @@ async function loadPage(path) {
 }
 
 // ===============================
-// Wiki構文パーサ（外部リンク・内部リンク・空白行・&br()対応）
+// Wiki構文パーサ
+// ・外部リンクは必ず有効
+// ・内部リンクは絶対に太字にしない
+// ・&br() は確実に改行
+// ・空白行は可視化
 // ===============================
 function parse(text) {
   let html = text;
 
   // -------------------------------
-  // 外部リンク先に飛べるリンクを先に処理
-  // [[表示名>URL]] → 表示名のみ、リンクはURL
-  // [[URL]] → URLそのまま
+  // 外部リンクを先に処理（壊さない）
   // -------------------------------
   html = html.replace(
-    /\[\[(.+?)>(https?:\/\/.+?)\]\]/g,
-    (_, text, url) => `<a href="${url}" target="_blank" rel="noopener" class="external-link">${text}</a>`
+    /\[\[(.+?)>(https?:\/\/[^\]]+)\]\]/g,
+    (_, label, url) =>
+      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${label}</a>`
   );
+
   html = html.replace(
-    /\[\[(https?:\/\/.+?)\]\]/g,
-    (_, url) => `<a href="${url}" target="_blank" rel="noopener" class="external-link">${url}</a>`
+    /\[\[(https?:\/\/[^\]]+)\]\]/g,
+    (_, url) =>
+      `<a href="${url}" target="_blank" rel="noopener" class="external-link">${url}</a>`
   );
 
   // -------------------------------
-  // 内部リンクプレースホルダ化（太字無効）
-  // [[ページ名]] または [[表示名>ページ名]]
+  // 内部リンクをプレースホルダ化
+  // [[]] は一切装飾させないため
   // -------------------------------
   const internalLinks = [];
-  html = html.replace(/\[\[(?:(.+?)>)?(.+?)\]\]/g, (_, display, page) => {
-    const idx = internalLinks.length;
-    internalLinks.push({ display: display || page, page });
-    return `%%INTERNAL_LINK_${idx}%%`;
+  html = html.replace(/\[\[(?:(.+?)>)?([^\]]+)\]\]/g, (_, display, page) => {
+    const i = internalLinks.length;
+    internalLinks.push({
+      display: display || page,
+      page
+    });
+    return `%%INTERNAL_LINK_${i}%%`;
   });
 
   // -------------------------------
-  // 装飾マクロ（太字）
-  // 内部リンクプレースホルダは太字化されない
-  // &br() で改行
+  // 装飾マクロ
   // -------------------------------
   html = html.replace(/&bold\(\)\{(.+?)\}/g, '<strong>$1</strong>');
   html = html.replace(/&br\(\)/g, '<br>');
@@ -79,9 +85,9 @@ function parse(text) {
   html = html.replace(/^\*\*\s*(.+)$/gm, '<h3>$1</h3>');
 
   // -------------------------------
-  // 箇条書き（連続 li を1つの ul にまとめる）
+  // 箇条書き
   // -------------------------------
-  html = html.replace(/(?:^- .+\n?)+/gm, block => {
+  html = html.replace(/(?:^- .+(?:\n|$))+/gm, block => {
     const items = block
       .trim()
       .split('\n')
@@ -91,25 +97,28 @@ function parse(text) {
   });
 
   // -------------------------------
-  // 段落処理（空行ごとに <p>）
+  // 段落処理（空白行を維持）
   // -------------------------------
   html = html
     .split(/\n{2,}/)
     .map(block => {
-      block = block.trim();
-      if (!block) return '<p class="blank">&nbsp;</p>'; // 空行
-      if (/^<h|^<ul|^<li|^<br>/.test(block)) return block;
+      if (!block.trim()) {
+        return '<div class="blank-line"></div>';
+      }
+      if (/^<h|^<ul|^<li|^<br>/.test(block.trim())) {
+        return block;
+      }
       return `<p>${block.replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
 
   // -------------------------------
-  // 内部リンク復元（太字禁止）
+  // 内部リンク復元（太字完全禁止）
   // -------------------------------
-  internalLinks.forEach((link, idx) => {
+  internalLinks.forEach((link, i) => {
     html = html.replace(
-      `%%INTERNAL_LINK_${idx}%%`,
-      `<a href="?page=${encodeURIComponent(link.page)}" data-page="${link.page}" class="no-bold">${link.display}</a>`
+      `%%INTERNAL_LINK_${i}%%`,
+      `<a href="?page=${encodeURIComponent(link.page)}" data-page="${link.page}" class="internal-link">${link.display}</a>`
     );
   });
 
@@ -117,17 +126,16 @@ function parse(text) {
 }
 
 // ===============================
-// 未作成リンクを赤くする
+// 未作成リンク判定（見た目は青のまま）
 // ===============================
 async function markMissingLinks() {
   const links = document.querySelectorAll('a[data-page]');
 
   for (const link of links) {
     const page = link.dataset.page;
-    const path = `pages/${page}.txt`;
 
     try {
-      const res = await fetch(path);
+      const res = await fetch(`pages/${page}.txt`);
       if (!res.ok) {
         link.classList.add('missing');
         link.title = '未作成ページ';
@@ -139,13 +147,36 @@ async function markMissingLinks() {
 }
 
 // ===============================
-// 未作成ページ用エディタ（簡易版）
+// 管理人判定（URL ?admin=1）
+// ===============================
+function isAdmin() {
+  const params = new URLSearchParams(location.search);
+  return params.get('admin') === '1';
+}
+
+// ===============================
+// 未作成ページ表示
 // ===============================
 function showEditor(path) {
   const title = decodeURIComponent(
     path.replace('pages/', '').replace('.txt', '')
   );
 
+  // 管理人以外
+  if (!isAdmin()) {
+    document.getElementById('content').innerHTML = `
+      <div class="page-title">
+        <h2>${title}</h2>
+        <div class="page-underline">
+          ${'━'.repeat(title.length)}
+        </div>
+      </div>
+      <p>この記事はまだ存在しません。</p>
+    `;
+    return;
+  }
+
+  // 管理人用
   document.getElementById('content').innerHTML = `
     <div class="page-title">
       <h2>${title}</h2>
