@@ -1,4 +1,4 @@
-// ===============================
+ // ===============================
 // ページ読み込み（タイトル下線付き）
 // ===============================
 async function loadPage(path) {
@@ -171,7 +171,7 @@ function showEditor(path) {
           ${'━'.repeat(title.length)}
         </div>
       </div>
-      <p>この記事はまだ存在しません。</p>
+      <p>この記事はまだ作成されていません。</p>
     `;
     return;
   }
@@ -185,7 +185,7 @@ function showEditor(path) {
       </div>
     </div>
 
-    <p>この記事はまだ存在しません。</p>
+    <p>この記事はまだ作成されていません。</p>
 
     <textarea
       id="editor"
