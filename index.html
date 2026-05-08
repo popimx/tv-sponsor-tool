@@ -41,9 +41,11 @@ menu.addEventListener('click', e => {
 });
 
 document.addEventListener('click', e => {
-  if (menu.classList.contains('open') &&
-      !menu.contains(e.target) &&
-      e.target !== btn) {
+  if (
+    menu.classList.contains('open') &&
+    !menu.contains(e.target) &&
+    e.target !== btn
+  ) {
     menu.classList.remove('open');
     menu.setAttribute('aria-hidden', 'true');
   }
@@ -57,7 +59,9 @@ loadMenu();
 async function loadMenu() {
   const res = await fetch('pages/menu.txt');
   const text = await res.text();
+
   document.getElementById('menu-content').innerHTML = parse(text);
+
   markMissingLinks();
 }
 
@@ -66,6 +70,7 @@ async function loadMenu() {
 ========================= */
 const params = new URLSearchParams(location.search);
 const page = params.get('page') || 'top';
+
 loadPage(`pages/${page}.txt`);
 
 async function loadPage(path) {
@@ -77,7 +82,9 @@ async function loadPage(path) {
   }
 
   const text = await res.text();
+
   document.getElementById('content').innerHTML = parse(text);
+
   markMissingLinks();
 }
 
@@ -113,12 +120,6 @@ function showEditor(path) {
   document.getElementById('content').innerHTML = `
     <h2>${title}</h2>
     <p>この記事はまだ作成されていません。</p>
-
-    <textarea
-      id="editor"
-      rows="14"
-      style="width:100%; box-sizing:border-box;"
-    ></textarea>
   `;
 }
 </script>
