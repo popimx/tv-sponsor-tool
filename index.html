@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -70,6 +70,7 @@ loadPage(`pages/${page}.txt`);
 
 async function loadPage(path) {
   const res = await fetch(path);
+
   if (!res.ok) {
     showEditor(path);
     return;
@@ -85,11 +86,16 @@ async function loadPage(path) {
 ========================= */
 async function markMissingLinks() {
   const links = document.querySelectorAll('a[data-page]');
+
   for (const link of links) {
     const name = link.dataset.page;
+
     try {
       const res = await fetch(`pages/${name}.txt`);
-      if (!res.ok) link.classList.add('missing');
+
+      if (!res.ok) {
+        link.classList.add('missing');
+      }
     } catch {
       link.classList.add('missing');
     }
@@ -97,7 +103,7 @@ async function markMissingLinks() {
 }
 
 /* =========================
-   編集モード（③＋④統合）
+   未作成ページ表示
 ========================= */
 function showEditor(path) {
   const title = decodeURIComponent(
@@ -108,32 +114,12 @@ function showEditor(path) {
     <h2>${title}</h2>
     <p>この記事はまだ作成されていません。</p>
 
-    <textarea id="editor" rows="14"
-      style="width:100%; box-sizing:border-box;"></textarea>
-
-    <div style="margin:8px 0;">
-      <button id="preview-btn">プレビュー</button>
-      <button id="publish-btn">公開する</button>
-    </div>
-
-    <div id="preview"></div>
+    <textarea
+      id="editor"
+      rows="14"
+      style="width:100%; box-sizing:border-box;"
+    ></textarea>
   `;
-
-  document.getElementById('preview-btn').onclick = () => {
-    const text = document.getElementById('editor').value;
-    document.getElementById('preview').innerHTML = `
-      <h3>プレビュー</h3>
-      ${parse(text)}
-    `;
-  };
-
-  document.getElementById('publish-btn').onclick = () => {
-    const text = document.getElementById('editor').value;
-    navigator.clipboard.writeText(text);
-    alert(
-      `以下の内容を\npages/${title}.txt\nとしてGitHubに保存してください`
-    );
-  };
 }
 </script>
 
